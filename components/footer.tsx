@@ -10,7 +10,7 @@ export function Footer() {
             &copy; 2024|All rights Reserved| Built by StatValue AI Team. The
             source code is available on{" "}
             <Link
-              href="https://github.com/SSoneSIR"
+              href="https://github.com/SSoneSIR/statvalue-ai"
               target="_blank"
               rel="noreferrer"
               className="font-medium underline underline-offset-4"

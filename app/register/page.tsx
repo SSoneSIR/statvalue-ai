@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
 import {
   Card,
   CardContent,
@@ -11,41 +11,81 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "../../components/ui/card";
 import Link from "next/link";
 import Image from "next/image";
-import { register } from "@/api/auth";
+import { register } from "../api/auth";
 import { useRouter } from "next/navigation";
-
-interface RegisterError {
-  error: string;
-}
+import toast from "react-hot-toast";
 
 export default function RegisterPage() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState<string>("");
+  const [confirm_password, setconfirm_password] = useState("");
+  const [error, setError] = useState<{ [key: string]: string }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false); // Added state for form submission status
   const router = useRouter();
+
+  const validateForm = (): { [key: string]: string } => {
+    const errors: { [key: string]: string } = {};
+
+    // Add validation logic here
+    if (!username) {
+      errors.username = "Username is required";
+    }
+
+    if (!email) {
+      errors.email = "Email is required";
+    }
+
+    if (!password) {
+      errors.password = "Password is required";
+    }
+
+    if (password !== confirm_password) {
+      errors.confirm_password = "Passwords do not match";
+    }
+
+    return errors; // Make sure this returns an object, even if it's empty
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
+
+    // Perform client-side validation first
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setError(validationErrors);
       return;
     }
+
+    setIsSubmitting(true);
+    setError({}); // Reset errors
+
     try {
-      await register(username, email, password);
-      router.push("/login"); // Redirect to login page after successful registration
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else if (typeof err === "object" && err !== null && "error" in err) {
-        setError((err as { error: string }).error);
-      } else {
-        setError("An unexpected error occurred during registration");
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, email, password, confirm_password }), // Sending form data as JSON
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        // Backend validation errors
+        const errorText = await response.text();
+        console.error("Error response:", errorText);
+        throw new Error(JSON.stringify(data.errors || data.error));
       }
+
+      toast.success("Registration successful!");
+      router.push("/login"); // Redirect to login page after successful registration
+    } catch (error: any) {
+      // Handle errors (backend or fetch)
+      toast.error(error.message || "An error occurred during registration.");
+      setError({ form: error.message || "Something went wrong!" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -122,13 +162,21 @@ export default function RegisterPage() {
                   id="confirm-password"
                   type="password"
                   placeholder="Confirm your password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  value={confirm_password}
+                  onChange={(e) => setconfirm_password(e.target.value)}
                   required
                   className="bg-gray-700 text-white border-gray-600 focus:border-blue-400"
                 />
+                {error.confirm_password && (
+                  <p className="text-red-500">{error.confirm_password}</p>
+                )}
               </div>
-              {error && <p className="text-red-500">{error}</p>}
+              {Object.keys(error).map((key) => (
+                <p key={key} className="text-red-500">
+                  {error[key]}
+                </p>
+              ))}
+
               <Button
                 type="submit"
                 className="w-full bg-blue-500 hover:bg-blue-600 text-white"
@@ -149,4 +197,7 @@ export default function RegisterPage() {
       </Card>
     </div>
   );
+}
+function setIsSubmitting(arg0: boolean) {
+  throw new Error("Function not implemented.");
 }

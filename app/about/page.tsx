@@ -2,7 +2,12 @@
 
 import { useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 import { Brain, TrendingUp, Users, GitCompare } from "lucide-react";
 import { motion, useAnimation } from "framer-motion";
 
