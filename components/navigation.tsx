@@ -6,6 +6,7 @@ import { cn } from "../lib/utils";
 import { Button } from "../components/ui/button";
 import { MenuIcon } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "../components/ui/sheet";
+import { useAuth } from "../app/context/AuthContext";
 
 const routes = [
   { href: "/", label: "Home" },
@@ -13,16 +14,16 @@ const routes = [
   { href: "/predict", label: "Predict Value" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
-  { href: "/admin", label: "Admin" },
 ];
 
 export function Navigation() {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex flex-wrap h-14 items-center justify-between">
-        {/* Logo on the far left */}
+        {/* Logo */}
         <div className="flex items-center space-x-4">
           <Link href="/">
             <img
@@ -50,22 +51,48 @@ export function Navigation() {
               {route.label}
             </Link>
           ))}
+
+          {/* Show Admin only if logged in as admin */}
+          {user && user.role === "admin" && (
+            <Link
+              href="/admin"
+              className={cn(
+                "transition-colors hover:text-foreground/80",
+                pathname === "/admin" ? "text-foreground" : "text-foreground/60"
+              )}
+            >
+              Admin
+            </Link>
+          )}
         </div>
 
-        {/* Login and Register buttons */}
+        {/* Login/Register or Logout */}
         <div className="hidden md:flex space-x-1">
-          <Link href="/login" className="hidden md:inline-flex">
-            <Button variant="ghost">Login</Button>
-          </Link>
-          <Link href="/register" className="hidden md:inline-flex">
-            <Button>Register</Button>
-          </Link>
+          {user ? (
+            <>
+              <span className="text-foreground/80">
+                Welcome, {user.username}
+              </span>
+              <Button variant="ghost" onClick={logout}>
+                Logout
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link href="/login">
+                <Button variant="ghost">Login</Button>
+              </Link>
+              <Link href="/register">
+                <Button>Register</Button>
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu */}
         <Sheet>
           <SheetTrigger asChild className="md:hidden">
-            <Button variant="ghost" size="icon" className="md:hidden">
+            <Button variant="ghost" size="icon">
               <MenuIcon className="h-5 w-5" />
               <span className="sr-only">Toggle navigation menu</span>
             </Button>
@@ -73,20 +100,23 @@ export function Navigation() {
           <SheetContent side="left">
             <nav className="flex flex-col space-y-4">
               {routes.map((route) => (
-                <Link
-                  key={route.href}
-                  href={route.href}
-                  className="text-lg font-medium"
-                >
+                <Link key={route.href} href={route.href}>
                   {route.label}
                 </Link>
               ))}
-              <Link href="/login" className="text-lg font-medium">
-                Login
-              </Link>
-              <Link href="/register" className="text-lg font-medium">
-                Register
-              </Link>
+              {user && user.role === "admin" && (
+                <Link href="/admin">Admin</Link>
+              )}
+              {user ? (
+                <Button variant="ghost" onClick={logout}>
+                  Logout
+                </Button>
+              ) : (
+                <>
+                  <Link href="/login">Login</Link>
+                  <Link href="/register">Register</Link>
+                </>
+              )}
             </nav>
           </SheetContent>
         </Sheet>

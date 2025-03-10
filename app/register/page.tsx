@@ -14,7 +14,6 @@ import {
 } from "../../components/ui/card";
 import Link from "next/link";
 import Image from "next/image";
-import { register } from "../api/auth";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
@@ -22,38 +21,33 @@ export default function RegisterPage() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirm_password, setconfirm_password] = useState("");
+  const [confirm_password, setConfirmPassword] = useState("");
   const [error, setError] = useState<{ [key: string]: string }>({});
-  const [isSubmitting, setIsSubmitting] = useState(false); // Added state for form submission status
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
   const validateForm = (): { [key: string]: string } => {
     const errors: { [key: string]: string } = {};
 
-    // Add validation logic here
-    if (!username) {
-      errors.username = "Username is required";
-    }
-
-    if (!email) {
-      errors.email = "Email is required";
-    }
-
-    if (!password) {
-      errors.password = "Password is required";
-    }
-
-    if (password !== confirm_password) {
+    if (!username) errors.username = "Username is required";
+    if (!email) errors.email = "Email is required";
+    if (!password) errors.password = "Password is required";
+    if (password !== confirm_password)
       errors.confirm_password = "Passwords do not match";
+
+    const passwordRegex =
+      /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (password && !passwordRegex.test(password)) {
+      errors.password =
+        "Password must be at least 8 characters, include an uppercase letter, a number, and a special character";
     }
 
-    return errors; // Make sure this returns an object, even if it's empty
+    return errors;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Perform client-side validation first
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
       setError(validationErrors);
@@ -61,33 +55,42 @@ export default function RegisterPage() {
     }
 
     setIsSubmitting(true);
-    setError({}); // Reset errors
+    setError({});
 
     try {
-      const response = await fetch("/api/auth/register", {
+      const response = await fetch("http://localhost:8000/api/auth/register/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, email, password, confirm_password }), // Sending form data as JSON
+        body: JSON.stringify({ username, email, password, confirm_password }),
       });
 
-      const data = await response.json();
-      if (!response.ok) {
-        // Backend validation errors
-        const errorText = await response.text();
-        console.error("Error response:", errorText);
-        throw new Error(JSON.stringify(data.errors || data.error));
+      const contentType = response.headers.get("Content-Type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        if (!response.ok) {
+          setError(
+            data.errors || { form: data.message || "Registration failed" }
+          );
+          toast.error(
+            data.message || "Registration failed. Please fix the issues."
+          );
+          return;
+        }
+      } else {
+        throw new Error("Unexpected response from server");
       }
 
-      toast.success("Registration successful!");
-      router.push("/login"); // Redirect to login page after successful registration
+      toast.success("Registration successful! Redirecting to login...");
+      setTimeout(() => router.push("/login"), 1500);
     } catch (error: any) {
-      // Handle errors (backend or fetch)
       toast.error(error.message || "An error occurred during registration.");
       setError({ form: error.message || "Something went wrong!" });
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const isFormInvalid = Object.keys(validateForm()).length > 0;
 
   return (
     <div className="flex items-center justify-center min-h-screen p-4 bg-gray-900">
@@ -98,7 +101,6 @@ export default function RegisterPage() {
             alt="Register illustration"
             layout="fill"
             objectFit="cover"
-            sizes="(max-width: 1024px) 100vw, 50vw"
             priority
           />
         </div>
@@ -113,75 +115,62 @@ export default function RegisterPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="username" className="text-gray-300">
-                  Username
-                </Label>
-                <Input
-                  id="username"
-                  placeholder="Enter your username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                  className="bg-gray-700 text-white border-gray-600 focus:border-blue-400"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-gray-300">
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="bg-gray-700 text-white border-gray-600 focus:border-blue-400"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-gray-300">
-                  Password
-                </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Create a password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="bg-gray-700 text-white border-gray-600 focus:border-blue-400"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password" className="text-gray-300">
-                  Confirm Password
-                </Label>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  placeholder="Confirm your password"
-                  value={confirm_password}
-                  onChange={(e) => setconfirm_password(e.target.value)}
-                  required
-                  className="bg-gray-700 text-white border-gray-600 focus:border-blue-400"
-                />
-                {error.confirm_password && (
-                  <p className="text-red-500">{error.confirm_password}</p>
-                )}
-              </div>
-              {Object.keys(error).map((key) => (
-                <p key={key} className="text-red-500">
-                  {error[key]}
-                </p>
+              {[
+                {
+                  id: "username",
+                  label: "Username",
+                  value: username,
+                  setter: setUsername,
+                },
+                {
+                  id: "email",
+                  label: "Email",
+                  value: email,
+                  setter: setEmail,
+                  type: "email",
+                },
+                {
+                  id: "password",
+                  label: "Password",
+                  value: password,
+                  setter: setPassword,
+                  type: "password",
+                },
+                {
+                  id: "confirm-password",
+                  label: "Confirm Password",
+                  value: confirm_password,
+                  setter: setConfirmPassword,
+                  type: "password",
+                },
+              ].map((field) => (
+                <div key={field.id} className="space-y-2">
+                  <Label htmlFor={field.id} className="text-gray-300">
+                    {field.label}
+                  </Label>
+                  <Input
+                    id={field.id}
+                    type={field.type || "text"}
+                    placeholder={`Enter your ${field.label.toLowerCase()}`}
+                    value={field.value}
+                    onChange={(e) => field.setter(e.target.value)}
+                    required
+                    className="bg-gray-700 text-white border-gray-600 focus:border-blue-400"
+                  />
+                  {error[field.id.replace("-", "_")] && (
+                    <p className="text-red-500">
+                      {error[field.id.replace("-", "_")]}
+                    </p>
+                  )}
+                </div>
               ))}
-
+              {error.form && <p className="text-red-500">{error.form}</p>}
               <Button
                 type="submit"
                 className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+                disabled={isSubmitting || isFormInvalid}
               >
-                Register
+                {isSubmitting ? "Registering..." : "Register"}
               </Button>
             </form>
           </CardContent>
@@ -197,7 +186,4 @@ export default function RegisterPage() {
       </Card>
     </div>
   );
-}
-function setIsSubmitting(arg0: boolean) {
-  throw new Error("Function not implemented.");
 }

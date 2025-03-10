@@ -24,7 +24,6 @@ INSTALLED_APPS = [
     'authentication',
     'rest_framework',
     'corsheaders',
-    'app',
 ]
 
 MIDDLEWARE = [
@@ -59,11 +58,18 @@ TEMPLATES = [
     },
 ]
 
+
 WSGI_APPLICATION = 'backend.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
-
+CLIENT= {
+    'host': 'localhost',
+    'port': 27017,
+    'username': 'statvalue_db',
+    'password': 'yashuyashu4321@',
+    'authProvider': 'admin',  # Or your database name
+}
 DATABASES = {
     'default': {
         'ENGINE': 'djongo',
@@ -125,3 +131,5 @@ REST_FRAMEWORK = {
     ],
 }
 
+
+AUTH_USER_MODEL = 'authentication.CustomUser'

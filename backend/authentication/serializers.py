@@ -1,7 +1,9 @@
 from rest_framework import serializers # type: ignore
 from django.contrib.auth.models import User
 import re
+from django.views.decorators.csrf import csrf_exempt
 
+@csrf_exempt
 class RegisterSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
 
@@ -20,10 +22,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         return value
 
     def validate_password(self, value):  #standardpassword
-        """ if len(value) < 8:
+        if len(value) < 8:
             raise serializers.ValidationError("Password must be at least 8 characters long.")
         if not re.search(r'[A-Z]', value):
-            raise serializers.ValidationError("Password must contain at least one uppercase letter.") """
+            raise serializers.ValidationError("Password must contain at least one uppercase letter.") 
         if not re.search(r'\d', value):
             raise serializers.ValidationError("Password must contain at least one number.")
         if not re.search(r'[!@#$%^&*(),.?":{}|<>]', value):
